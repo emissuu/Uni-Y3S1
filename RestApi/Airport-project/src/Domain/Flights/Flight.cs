@@ -14,7 +14,7 @@ public class Flight
     
     private Flight(
         Guid id, 
-        string flightCode,
+        string flightNumber,
         string origin,
         string destination,
         DateTime departureTime,
@@ -24,7 +24,7 @@ public class Flight
         FlightStatus status
     ) => 
         (Id, FlightNumber, Origin,  Destination, DepartureTime, ArrivalTime, SeatsCount, Price, Status) = 
-        (id, flightCode, origin, destination, departureTime, arrivalTime, seatsCount, price, status);
+        (id, flightNumber, origin, destination, departureTime, arrivalTime, seatsCount, price, status);
 
     public static Flight New(
         Guid id,

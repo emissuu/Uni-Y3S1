@@ -6,6 +6,7 @@ obj
 .nuxt
 node_modules
 .env
+appsettings.Development.json
 .output
 .data
 .nitro
