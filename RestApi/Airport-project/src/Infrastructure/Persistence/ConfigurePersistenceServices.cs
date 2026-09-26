@@ -35,8 +35,8 @@ public static class ConfigurePersistenceServices
 
     private static void AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<FlightRepository>();
-        services.AddScoped<IFlightRepository>(provider => 
-            provider.GetRequiredService<FlightRepository>());
+        services.AddScoped<FlashcardRepository>();
+        services.AddScoped<IFlashcardRepository>(provider => 
+            provider.GetRequiredService<FlashcardRepository>());
     }
 }

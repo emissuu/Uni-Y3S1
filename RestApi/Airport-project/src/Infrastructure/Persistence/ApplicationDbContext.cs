@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-using Domain.Flights;
+using Domain.Flashcards;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -7,7 +7,7 @@ namespace Infrastructure.Persistence;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) 
     : DbContext(options)
 {
-    public DbSet<Flight> Flights { get; init; }
+    public DbSet<Flashcard> Flashcards { get; init; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
