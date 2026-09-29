@@ -11,6 +11,8 @@ public interface ICarDealer
     decimal GetBalance();
     bool BuyCarCustomer(Car car);
     bool BuyCarDealer(Car car);
+    bool CanExchangeCars(Car car1, Car car2);
+    void ExchangeCars(Car car1, Car car2);
     bool SellCar(Car car);
     bool ExchangeCar(ICarDealer otherCarDealer, Car car);
 }

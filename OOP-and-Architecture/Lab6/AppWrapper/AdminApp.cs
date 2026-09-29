@@ -1,4 +1,5 @@
 ﻿using Lab6.App.Abstract;
+using Lab6.App.Implementations;
 using Lab6.App.Models;
 
 namespace Lab6.AppWrapper;
@@ -122,6 +123,7 @@ public class AdminApp(List<ICarDealer> carDealers)
     {
         while (true)
         {
+            Console.WriteLine("Enter details of other dealership's car");
             Console.Write("Enter car dealership name: ");
             var inputDealer = Console.ReadLine();
             if (String.IsNullOrWhiteSpace(inputDealer))
@@ -143,28 +145,61 @@ public class AdminApp(List<ICarDealer> carDealers)
                 Console.WriteLine("Model cannot be empty");
                 continue;
             }
-
+            
             var dealerInQuestion = carDealers.FirstOrDefault(x => x.DealerName.ToLower() == inputDealer.ToLower());
             if (dealerInQuestion == null)
             {
                 Console.WriteLine($"Could not find the dealer.");
                 continue;
             }
-            var car = dealerInQuestion.GetCar(inputBrand.ToLower(), inputModel.ToLower());
-            if (car == null)
+            var carTheirs = dealerInQuestion.GetCar(inputBrand.ToLower(), inputModel.ToLower());
+            if (carTheirs == null)
+            {
+                Console.WriteLine($"Could not find the car.");
+                return;
+            }
+            
+            Console.WriteLine("Enter details of your dealership's car");
+            Console.Write("Enter car's brand: ");
+            var inputBrandMine = Console.ReadLine();
+            if (String.IsNullOrWhiteSpace(inputBrandMine))
+            {
+                Console.WriteLine("Brand cannot be empty");
+                continue;
+            }
+            Console.Write("Enter car's model: ");
+            var inputModelMine = Console.ReadLine();
+            if (String.IsNullOrWhiteSpace(inputModelMine))
+            {
+                Console.WriteLine("Model cannot be empty");
+                continue;
+            }
+
+            var carYours = carDealer.GetCar(inputBrandMine.ToLower(), inputModelMine.ToLower());
+            if (carYours == null)
             {
                 Console.WriteLine($"Could not find the car.");
                 return;
             }
 
-            if (carDealer.ExchangeCar(dealerInQuestion, car))
-            {
-                Console.WriteLine("Successfully exchanged car.");
-            }
-            else
+            var exchanger = new CarExchanger(carDealer, dealerInQuestion);
+            var exchangeSuccessful = exchanger.ExchangeCars(carYours, carTheirs);
+            if (!exchangeSuccessful)
             {
                 Console.WriteLine($"Could not exchange the car.");
+                return;
             }
+            
+            Console.WriteLine("Successfully exchanged car.");
+
+            // if (carDealer.ExchangeCar(dealerInQuestion, carTheirs))
+            // {
+            //     Console.WriteLine("Successfully exchanged car.");
+            // }
+            // else
+            // {
+            //     Console.WriteLine($"Could not exchange the car.");
+            // }
 
             return;
         }

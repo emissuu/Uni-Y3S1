@@ -64,21 +64,41 @@ public class CarDealer : ICarDealer
         return false;
     }
 
+    public bool CanExchangeCars(Car car1, Car car2)
+    {
+        decimal priceDifference = car2.Price - car1.Price;
+        
+        if (priceDifference >= 0)
+        {
+            return _account.Withdraw(priceDifference);
+        }
+        _account.Deposit(priceDifference * -1);
+        return true;
+    }
+
+    public void ExchangeCars(Car car1, Car car2)
+    {
+        _inventory.RemoveCar(car1);
+        _inventory.AddCar(car2);
+    }
+
     public bool ExchangeCar(ICarDealer otherCarDealer, Car car)
     {
-        if (_account.Withdraw(car.Price))
+        bool isWithdrawSuccessful = _account.Withdraw(car.Price);
+        if (!isWithdrawSuccessful)
         {
-            if (otherCarDealer.BuyCarDealer(car))
-            {
-                _inventory.AddCar(car);
-                return true;
-            }
-            else
-            {
-                _account.Deposit(car.Price);
-            }
+            return false;
         }
-        return false;
+
+        bool isOperationSuccessful = otherCarDealer.BuyCarDealer(car);
+        if (!isOperationSuccessful)
+        {
+            _account.Deposit(car.Price);
+            return false;
+        }
+        
+        _inventory.AddCar(car);
+        return true;
     }
 
     private bool BuyCar(Car car, decimal price)
