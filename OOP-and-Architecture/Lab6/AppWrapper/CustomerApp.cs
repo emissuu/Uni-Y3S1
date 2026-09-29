@@ -9,7 +9,7 @@ public class CustomerApp(List<ICarDealer> carDealers)
     {
         while (true)
         {
-            Console.Write($"Choose car dealership(volvo, renault, volkswagen, exit): ");
+            Console.Write($"Choose car dealership(volvo, renault, volkswagen, back): ");
             
             var input = Console.ReadLine();
             if (String.IsNullOrWhiteSpace(input))
@@ -20,21 +20,21 @@ public class CustomerApp(List<ICarDealer> carDealers)
             switch (input.ToLower().Trim())
             {
                 case "volvo": 
-                    DealerMenu(carDealers.First(x => x.DealerName.ToLower() == "volvo"));
+                    CustomerMenu(carDealers.First(x => x.DealerName.ToLower() == "volvo"));
                     break;
                 case "renault":
-                    DealerMenu(carDealers.First(x => x.DealerName.ToLower() == "renault"));
+                    CustomerMenu(carDealers.First(x => x.DealerName.ToLower() == "renault"));
                     break;
                 case "volkswagen":
-                    DealerMenu(carDealers.First(x => x.DealerName.ToLower() == "volkswagen"));
+                    CustomerMenu(carDealers.First(x => x.DealerName.ToLower() == "volkswagen"));
                     break;
-                case "exit":
+                case "back":
                     return;
             }
         }
     }
 
-    private void DealerMenu(ICarDealer carDealer)
+    private void CustomerMenu(ICarDealer carDealer)
     {
         while (true)
         {
@@ -64,17 +64,25 @@ public class CustomerApp(List<ICarDealer> carDealers)
         }
     }
 
-    public void BuyCar(ICarDealer carDealer)
+    private void BuyCar(ICarDealer carDealer)
     {
         while (true)
         {
+            Console.Write("Enter car's brand: ");
+            var inputBrand = Console.ReadLine();
+            if (String.IsNullOrWhiteSpace(inputBrand))
+            {
+                Console.WriteLine("Brand cannot be empty");
+                continue;
+            }
             Console.Write("Enter car's model: ");
             var inputModel = Console.ReadLine();
             if (String.IsNullOrWhiteSpace(inputModel))
             {
+                Console.WriteLine("Model cannot be empty");
                 continue;
             }
-            var car = carDealer.GetCar(carDealer.DealerName.ToLower(), inputModel.ToLower());
+            var car = carDealer.GetCar(inputBrand.ToLower(), inputModel.ToLower());
             if (car == null)
             {
                 Console.WriteLine("Couldn't find car.");
