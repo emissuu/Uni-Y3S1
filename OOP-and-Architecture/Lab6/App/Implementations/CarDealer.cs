@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Lab6.App.Abstract;
+﻿using Lab6.App.Abstract;
 using Lab6.App.Models;
 
 namespace Lab6.App.Implementations;
