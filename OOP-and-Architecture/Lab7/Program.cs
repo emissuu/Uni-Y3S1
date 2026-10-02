@@ -6,7 +6,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        var linkedList = new UserLinkedList<int>(2);
+        var linkedList = new UserLinkedList<int>();
         linkedList.AddLast(2);
         linkedList.AddFirst(1);
         PrintList(linkedList);
@@ -16,7 +16,7 @@ public class Program
         if (result1 is null)
             Console.WriteLine("No element found");
         else
-            Console.WriteLine("Found element: " + result1.Data);
+            Console.WriteLine("Found element: " + result1.Value);
 
         // 3
         linkedList.RemoveLast();

@@ -4,44 +4,49 @@ namespace Lab7;
 
 public class UserLinkedList<T> : IEnumerable
 {
-    public T Data;
-    public UserLinkedList<T>? Head = null;
+    public UserLinkedListNode<T>? Head = null;
+    public UserLinkedListNode<T>? Tail = null;
 
-    public UserLinkedList(T value)
+    public UserLinkedListNode<T> AddFirst(T value)
     {
-        Data = value;
-    }
-
-    public void AddFirst(T value)
-    {
-        var oldData = Data;
-        var oldHead = Head;
-
-        Data = value;
-
-        Head = new UserLinkedList<T>(oldData)
+        var node = new UserLinkedListNode<T>(this, value);
+        node.next = Head;
+        
+        if (Head is not null)
         {
-            Head = oldHead
-        };
-    }
-
-    public UserLinkedList<T> AddLast(T value)
-    {
-        if (Head is null)
-        {
-            Head = new UserLinkedList<T>(value);
+            Head.prev = node;
         }
         else
         {
-            Head.AddLast(value);
+            Tail = node;
         }
-        return this;
+        
+        Head = node;
+        return node;
     }
 
-    public UserLinkedList<T> Clear()
+    public UserLinkedListNode<T> AddLast(T value)
+    {
+        var node = new UserLinkedListNode<T>(this, value);
+        node.prev = Tail;
+
+        if (Tail is not null)
+        {
+            Tail.next = node;
+        }
+        else
+        {
+            Head = node;
+        }
+        
+        Tail = node;
+        return node;
+    }
+
+    public void Clear()
     {
         Head = null;
-        return this;
+        Tail = null;
     }
 
     public bool Contains(T value)
@@ -49,117 +54,105 @@ public class UserLinkedList<T> : IEnumerable
         return Find(value) != null;
     }
 
-    public UserLinkedList<T>? Find(T value)
+    public UserLinkedListNode<T>? Find(T value)
     {
-        if (EqualityComparer<T>.Default.Equals(Data, value))
-            return this;
-        if (Head is null)
-            return null;
-        
-        return Head.Find(value);
-    }
-
-    public UserLinkedList<T>? FindLast(T value)
-    {
-        UserLinkedList<T>? current = this;
-        UserLinkedList<T>? lastFound = null;
+        var current = Head;
         while (current is not null)
         {
-            if (EqualityComparer<T>.Default.Equals(current.Data, value))
-                lastFound = current;
-            current = current.Head;
+            if (EqualityComparer<T>.Default.Equals(current.Value, value))
+                return current;
+            current = current.Next;
         }
-        return lastFound;
+        return null;
+    }
+
+    public UserLinkedListNode<T>? FindLast(T value)
+    {
+        var current = Tail;
+        while (current is not null)
+        {
+            if (EqualityComparer<T>.Default.Equals(current.Value, value))
+                return current;
+            current = current.Prev;
+        }
+        return null;
     }
 
     public bool Remove(T value)
     {
-        if (EqualityComparer<T>.Default.Equals(Data, value))
-        {
-            if (Head is null)
-                return false;
+        var node = Find(value);
+        if (node is null) return false;
 
-            Data = Head.Data;
-            Head = Head.Head;
-            return true;
+        if (node.next is null)
+        {
+            Tail = node.prev;
+        }
+        else
+        {
+            node.next.prev = node.prev;
+        }
+
+        if (node.prev is null)
+        {
+            Head = node.next;
+        }
+        else
+        {
+            node.prev.next = node.next;
         }
         
-        UserLinkedList<T>? current = this;
-        while (current.Head is not null)
-        {
-            if (EqualityComparer<T>.Default.Equals(current.Head.Data, value))
-            {
-                current.Head = current.Head.Head;
-                return true;
-            }
-            
-            current = current.Head;
-        }
-
-        return false;
+        node.next = null;
+        node.prev = null;
+        node.list = null;
+        return true;
     }
 
     public void RemoveFirst()
     {
         if (Head is null)
-            throw new InvalidOperationException();
-        Data = Head.Data;
-        Head = Head.Head;
+            return;
+        
+        var node = Head;
+        Head = node.next;
+        if (Head is null)
+        {
+            Tail = null;
+        }
+        else
+        {
+            Head.prev = null;
+        }
+        node.next = null;
+        node.list = null;
     }
 
     public void RemoveLast()
     {
-        if (Head is null) return; // 1 2 3 4
+        if (Tail is null)
+            return;
         
-        UserLinkedList<T> current = this;
-        
-        
-
-        while (current.Head!.Head is not null)
+        var node = Tail;
+        Tail = node.prev;
+        if (Tail is null)
         {
-            if (current.Head is null) throw new InvalidOperationException();
-            current = current.Head;
+            Head = null;
         }
-
-        current.Head = null;
+        else
+        {
+            Tail.next = null;
+        }
+        node.prev = null;
+        node.list = null;
     }
 
-    public IEnumerator GetEnumerator() => new Enumerator(this);
-
-    public struct Enumerator(UserLinkedList<T> list) : IEnumerator<T>
+    public IEnumerator GetEnumerator()
     {
-        private UserLinkedList<T>? _current = null;
+        UserLinkedListNode<T>? current = Head;
 
-        public bool MoveNext()
+        while (current is not null)
         {
-            if (_current == null)
-            {
-                _current = list;
-            }
-            else 
-                _current = _current.Head;
-            
-            return _current != null;
+            yield return current.Value;
+            current = current.next;
         }
-
-        public void Reset()
-        {
-            _current = null;
-        }
-
-        public T Current {
-            get {
-                if (_current is null)
-                    throw new InvalidOperationException();
-                return _current.Data;
-            }
-        }
-
-        T IEnumerator<T>.Current => Current;
-
-        object? IEnumerator.Current => Current;
-
-        public void Dispose() {}
     }
-
 }
