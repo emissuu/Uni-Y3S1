@@ -4,8 +4,8 @@ namespace Lab7;
 
 public class UserLinkedList<T> : IEnumerable
 {
-    public UserLinkedListNode<T>? Head = null;
-    public UserLinkedListNode<T>? Tail = null;
+    public UserLinkedListNode<T>? Head;
+    public UserLinkedListNode<T>? Tail;
 
     public UserLinkedListNode<T> AddFirst(T value)
     {
