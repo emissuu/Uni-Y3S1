@@ -30,16 +30,17 @@ public record FlashcardDto(
 }
 
 public record CreateFlashcardDto(
-    [Required, MaxLength(255)] string Question,
-    [MaxLength(2047)] string? Hint,
-    [Required, MaxLength(255)] string Answer,
-    [MaxLength(2047)] string? Description
+    string Question,
+    string? Hint,
+    string Answer,
+    string? Description
 );
 
 public record UpdateFlashcardDto(
-    [Required, MaxLength(255)] string Question,
-    [MaxLength(2047)] string? Hint,
-    [Required, MaxLength(255)] string Answer,
-    [MaxLength(2047)] string? Description,
-    [Range(1, 100_000)] int Score
+    string Question,
+    string? Hint,
+    string Answer,
+    string? Description,
+    int Score,
+    DateTime DueDate
 );

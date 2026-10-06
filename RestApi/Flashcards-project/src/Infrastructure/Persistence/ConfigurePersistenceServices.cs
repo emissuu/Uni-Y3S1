@@ -1,4 +1,5 @@
-﻿using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces.Queries;
+using Application.Common.Interfaces.Repositories;
 using Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -37,6 +38,8 @@ public static class ConfigurePersistenceServices
     {
         services.AddScoped<FlashcardRepository>();
         services.AddScoped<IFlashcardRepository>(provider => 
+            provider.GetRequiredService<FlashcardRepository>());
+        services.AddScoped<IFlashcardQueries>(provider =>
             provider.GetRequiredService<FlashcardRepository>());
     }
 }

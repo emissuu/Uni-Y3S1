@@ -1,5 +1,7 @@
 ﻿using Api.Dtos;
-using Application.Flashcards.Services.Abstract;
+using Application.Common.Interfaces.Queries;
+using Application.Flashcards.Commands;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -7,19 +9,19 @@ namespace Api.Controllers;
 [Route("flashcards")]
 [ApiController]
 
-public class FlashcardController(IFlashcardService flashcardService) : ControllerBase
+public class FlashcardController(ISender sender, IFlashcardQueries flashcardQueries) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<FlashcardDto>>> GetFlashcards(CancellationToken cancellationToken)
     {
-        var flights = await flashcardService.GetFlashcards(cancellationToken);
-        return flights.Select(f => FlashcardDto.FromDomainModel(f)).ToList();
+        var flashcards = await flashcardQueries.GetAll(cancellationToken);
+        return flashcards.Select(FlashcardDto.FromDomainModel).ToList();
     }
 
     [HttpGet("{flashcardId:guid}")]
     public async Task<ActionResult<FlashcardDto>> GetFlashcard(Guid flashcardId, CancellationToken cancellationToken)
     {
-        var flashcard = await flashcardService.GetFlashcard(flashcardId, cancellationToken);
+        var flashcard = await flashcardQueries.GetById(flashcardId, cancellationToken);
         if (flashcard is null)
         {
             return NotFound();
@@ -33,17 +35,20 @@ public class FlashcardController(IFlashcardService flashcardService) : Controlle
         [FromBody] CreateFlashcardDto request,
         CancellationToken cancellationToken)
     {
+        var input = new CreateFlashcardCommand
+        {
+            Question = request.Question,
+            Hint = request.Hint,
+            Answer = request.Answer,
+            Description = request.Description
+        };
+
         try
         {
-            var flashcard = await flashcardService.Add(
-                request.Question,
-                request.Hint,
-                request.Answer,
-                request.Description,
-                cancellationToken);
+            var flashcard = await sender.Send(input, cancellationToken);
+            var dto = FlashcardDto.FromDomainModel(flashcard);
 
-            var flashcardDto = FlashcardDto.FromDomainModel(flashcard);
-            return CreatedAtAction(nameof(GetFlashcard), new { flashcardId = flashcard.Id }, flashcardDto);
+            return CreatedAtAction(nameof(GetFlashcard), new { flashcardId = dto.Id }, dto);
         }
         catch (ArgumentException exception)
         {
@@ -57,16 +62,20 @@ public class FlashcardController(IFlashcardService flashcardService) : Controlle
         [FromBody] UpdateFlashcardDto request,
         CancellationToken cancellationToken)
     {
+        var input = new UpdateFlashcardCommand
+        {
+            FlashcardId = flashcardId,
+            Question = request.Question,
+            Hint = request.Hint,
+            Answer = request.Answer,
+            Description = request.Description,
+            Score = request.Score,
+            DueDate = request.DueDate
+        };
+        
         try
         {
-            var flashcard = await flashcardService.Update(
-                flashcardId,
-                request.Question,
-                request.Hint,
-                request.Answer,
-                request.Description,
-                request.Score,
-                cancellationToken);
+            var flashcard = await sender.Send(input, cancellationToken);
             if (flashcard is null)
             {
                 return NotFound($"Flashcard with id {flashcardId} not found");
@@ -84,7 +93,12 @@ public class FlashcardController(IFlashcardService flashcardService) : Controlle
     [HttpDelete("{flashcardId:guid}")]
     public async Task<ActionResult> DeleteFlashcard(Guid flashcardId, CancellationToken cancellationToken)
     {
-        var isDeleted = await flashcardService.Delete(flashcardId, cancellationToken);
+        var input = new DeleteFlashcardCommand
+        {
+            FlashcardId = flashcardId
+        };
+        
+        var isDeleted = await sender.Send(input, cancellationToken);
         if (isDeleted)
         {
             return NoContent();

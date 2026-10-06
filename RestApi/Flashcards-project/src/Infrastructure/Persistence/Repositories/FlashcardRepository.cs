@@ -1,14 +1,17 @@
-﻿using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces.Queries;
+using Application.Common.Interfaces.Repositories;
 using Domain.Flashcards;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
 
-public class FlashcardRepository(ApplicationDbContext context) : IFlashcardRepository
+public class FlashcardRepository(ApplicationDbContext context) : IFlashcardRepository, IFlashcardQueries
 {
     public async Task<IReadOnlyList<Flashcard>> GetAll(CancellationToken cancellationToken)
     {
-        return await context.Flashcards.ToListAsync(cancellationToken);
+        return await context.Flashcards
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<Flashcard?> GetById(Guid id, CancellationToken cancellationToken)
