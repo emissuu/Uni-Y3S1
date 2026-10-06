@@ -13,3 +13,4 @@ appsettings.Development.json
 .cache
 dist
 dbconnection.txt
+*.DotSettings.user
