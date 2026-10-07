@@ -15,8 +15,8 @@ public class Program
     {
         return input
             .Split(',')
-            .Where(x => int.TryParse(x, out int n))
-            .Select(x => int.Parse(x))
+            .Where(x => int.TryParse(x, out _))
+            .Select(int.Parse)
             .OrderBy(x => x)
             .Skip(3)
             .Sum();
