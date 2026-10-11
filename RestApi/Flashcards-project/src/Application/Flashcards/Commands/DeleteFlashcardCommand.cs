@@ -1,24 +1,43 @@
 ﻿using Application.Common.Interfaces.Repositories;
+using Application.Flashcards.Exceptions;
+using Domain.Flashcards;
+using LanguageExt;
 using MediatR;
 
 namespace Application.Flashcards.Commands;
 
-public record DeleteFlashcardCommand : IRequest<bool>
+public record DeleteFlashcardCommand : IRequest<Either<FlashcardException, Flashcard>>
 {
     public required Guid FlashcardId { get; init; }
 }
 
 public class DeleteFlashcardCommandHandler(IFlashcardRepository flashcardRepository)
-    : IRequestHandler<DeleteFlashcardCommand, bool>
+    : IRequestHandler<DeleteFlashcardCommand, Either<FlashcardException, Flashcard>>
 {
-    public async Task<bool> Handle(DeleteFlashcardCommand request, CancellationToken cancellationToken)
+    public async Task<Either<FlashcardException, Flashcard>> Handle(
+        DeleteFlashcardCommand request, 
+        CancellationToken cancellationToken)
     {
-        var flashcard = await flashcardRepository.GetById(request.FlashcardId, cancellationToken);
-        if (flashcard is null)
+        var flashcardId = new FlashcardId(request.FlashcardId);
+        var flashcard = await flashcardRepository.GetById(flashcardId, cancellationToken);
+
+        return await flashcard.MatchAsync(
+            f => DeleteEntity(f, cancellationToken),
+            () => new FlashcardNotFoundException(flashcardId));
+    }
+
+    private async Task<Either<FlashcardException, Flashcard>> DeleteEntity(
+        Flashcard flashcard,
+        CancellationToken cancellationToken)
+    {
+        try
         {
-            return false;
+            await flashcardRepository.Delete(flashcard, cancellationToken);
+            return flashcard;
         }
-        await flashcardRepository.Delete(flashcard, cancellationToken);
-        return true;
+        catch (Exception exception)
+        {
+            return new FlashcardUnhandledException(flashcard.Id, exception);
+        }
     }
 }

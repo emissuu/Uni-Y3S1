@@ -17,7 +17,7 @@ public record FlashcardDto(
 {
     public static FlashcardDto FromDomainModel(Flashcard flashcard)
         => new(
-            flashcard.Id, 
+            flashcard.Id.Value, 
             flashcard.Question,
             flashcard.Hint,
             flashcard.Answer,

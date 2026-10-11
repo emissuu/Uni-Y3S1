@@ -1,10 +1,12 @@
 ﻿using Application.Common.Interfaces.Repositories;
+using Application.Flashcards.Exceptions;
 using Domain.Flashcards;
+using LanguageExt;
 using MediatR;
 
 namespace Application.Flashcards.Commands;
 
-public record CreateFlashcardCommand : IRequest<Flashcard>
+public record CreateFlashcardCommand : IRequest<Either<FlashcardException, Flashcard>>
 {
     public required string Question { get; init; }
     public string? Hint { get; init; }
@@ -13,17 +15,37 @@ public record CreateFlashcardCommand : IRequest<Flashcard>
 }
 
 public class CreateFlashcardCommandHandler(IFlashcardRepository flashcardRepository)
-     : IRequestHandler<CreateFlashcardCommand, Flashcard>
+     : IRequestHandler<CreateFlashcardCommand, Either<FlashcardException, Flashcard>>
 {
-    public async Task<Flashcard> Handle(CreateFlashcardCommand request, CancellationToken cancellationToken)
+    public async Task<Either<FlashcardException, Flashcard>> Handle(
+        CreateFlashcardCommand request, 
+        CancellationToken cancellationToken)
     {
-        var exisitingFlashcard = await flashcardRepository.GetByQuestion(request.Question, cancellationToken);
-        if (exisitingFlashcard is not null)
+        var flashcard = await flashcardRepository.GetByQuestion(request.Question, cancellationToken);
+        return await flashcard.MatchAsync(
+            f => new FlashcardAlreadyExistsException(f.Id),
+            () => CreateEntity(request, cancellationToken));
+    }
+
+    private async Task<Either<FlashcardException, Flashcard>> CreateEntity(
+        CreateFlashcardCommand request,
+        CancellationToken cancellationToken)
+    {
+        try
         {
-            throw new ArgumentException($"Flashcard with question '{request.Question}' already exists");
+            var flashcard = Flashcard.New(
+                FlashcardId.New(),
+                request.Question,
+                request.Hint,
+                request.Answer,
+                request.Description,
+                72,
+                DateTime.UtcNow);
+            return await flashcardRepository.Add(flashcard, cancellationToken);
         }
-        
-        var flashcard = Flashcard.New(Guid.NewGuid(), request.Question, request.Hint, request.Answer, request.Description, 72, DateTime.UtcNow);
-        return await flashcardRepository.Add(flashcard, cancellationToken);
+        catch (Exception exception)
+        {
+            return new FlashcardUnhandledException(FlashcardId.Empty(), exception);
+        }
     }
 }

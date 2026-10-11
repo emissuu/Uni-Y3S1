@@ -2,7 +2,7 @@
 
 public class Flashcard
 {
-    public Guid Id { get; }
+    public FlashcardId Id { get; }
     public string Question { get; private set; }
     public string? Hint { get; private set; }
     public string Answer { get; private set; }
@@ -14,7 +14,7 @@ public class Flashcard
     public DateTime? DeletedAt { get; private set; }
 
     private Flashcard(
-        Guid id,
+        FlashcardId id,
         string question,
         string? hint,
         string answer,
@@ -26,7 +26,7 @@ public class Flashcard
     (id, question, hint, answer, description, score, dueDate, createdAt);
 
     public static Flashcard New(
-        Guid id,
+        FlashcardId id,
         string question,
         string? hint,
         string answer,

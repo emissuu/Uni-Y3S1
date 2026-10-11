@@ -1,10 +1,13 @@
 ﻿using Application.Common.Interfaces.Repositories;
+using Application.Flashcards.Exceptions;
 using Domain.Flashcards;
+using LanguageExt;
 using MediatR;
+using Unit = LanguageExt.Unit;
 
 namespace Application.Flashcards.Commands;
 
-public record UpdateFlashcardCommand : IRequest<Flashcard?>
+public record UpdateFlashcardCommand : IRequest<Either<FlashcardException, Flashcard>>
 {
     public required Guid FlashcardId { get; init; }
     public required string Question { get; init; }
@@ -16,30 +19,52 @@ public record UpdateFlashcardCommand : IRequest<Flashcard?>
 }
 
 public class UpdateFlashcardCommandHandler(IFlashcardRepository flashcardRepository)
-    : IRequestHandler<UpdateFlashcardCommand, Flashcard?>
+    : IRequestHandler<UpdateFlashcardCommand, Either<FlashcardException, Flashcard>>
 {
-    public async Task<Flashcard?> Handle(UpdateFlashcardCommand request, CancellationToken cancellationToken)
+    public async Task<Either<FlashcardException, Flashcard>> Handle(
+        UpdateFlashcardCommand request,
+        CancellationToken cancellationToken)
     {
-        var existingFlashcard = await flashcardRepository.GetById(request.FlashcardId, cancellationToken);
-        if (existingFlashcard is null)
+        var flashcardId = new FlashcardId(request.FlashcardId);
+        var flashcard = await flashcardRepository.GetById(flashcardId, cancellationToken);
+
+        return await flashcard.MatchAsync(
+            f => CheckDuplicates(f.Id, request.Question, cancellationToken)
+                .BindAsync(_ => UpdateEntity(f, request, cancellationToken)),
+            () => new FlashcardNotFoundException(flashcardId));
+    }
+
+    private async Task<Either<FlashcardException, Unit>> CheckDuplicates(
+        FlashcardId currentFlashcardId,
+        string question,
+        CancellationToken cancellationToken)
+    {
+        var flashcard = await flashcardRepository.GetByQuestion(question, cancellationToken);
+        return flashcard.Match<Either<FlashcardException, Unit>>(
+            f => f.Id == currentFlashcardId ? Unit.Default : new FlashcardAlreadyExistsException(f.Id),
+            () => Unit.Default);
+    }
+
+    private async Task<Either<FlashcardException, Flashcard>> UpdateEntity(
+        Flashcard flashcard,
+        UpdateFlashcardCommand request,
+        CancellationToken cancellationToken)
+    {
+        try
         {
-            return null;
+            flashcard.UpdateDetails(
+                request.Question,
+                request.Hint,
+                request.Answer,
+                request.Description,
+                request.Score ?? flashcard.Score,
+                request.DueDate ?? flashcard.DueDate);
+
+            return await flashcardRepository.Update(flashcard, cancellationToken);
         }
-        
-        var flashcardSameQuestion = await flashcardRepository.GetByQuestion(request.Question, cancellationToken);
-        if (flashcardSameQuestion is not null && flashcardSameQuestion.Id != existingFlashcard.Id)
+        catch (Exception exception)
         {
-            throw new ArgumentException($"Flashcard with question '{request.Question}' already exists");
+            return new FlashcardUnhandledException(flashcard.Id, exception);
         }
-        
-        existingFlashcard.UpdateDetails(
-            request.Question, 
-            request.Hint, 
-            request.Answer,
-            request.Description,
-            request.Score ?? existingFlashcard.Score,
-            request.DueDate ?? existingFlashcard.DueDate);
-        
-        return await flashcardRepository.Update(existingFlashcard, cancellationToken);
     }
 }

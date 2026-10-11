@@ -10,6 +10,7 @@ public class FlashcardConfiguration : IEntityTypeConfiguration<Flashcard>
     public void Configure(EntityTypeBuilder<Flashcard> builder)
     {
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasConversion(x => x.Value, x => new FlashcardId(x));
 
         builder.Property(x => x.Question)
             .HasColumnType("varchar(255)")

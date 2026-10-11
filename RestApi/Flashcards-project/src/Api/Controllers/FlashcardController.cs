@@ -1,6 +1,8 @@
 ﻿using Api.Dtos;
+using Api.Modules.Errors;
 using Application.Common.Interfaces.Queries;
 using Application.Flashcards.Commands;
+using Domain.Flashcards;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,16 +20,13 @@ public class FlashcardController(ISender sender, IFlashcardQueries flashcardQuer
         return flashcards.Select(FlashcardDto.FromDomainModel).ToList();
     }
 
-    [HttpGet("{flashcardId:guid}")]
-    public async Task<ActionResult<FlashcardDto>> GetFlashcard(Guid flashcardId, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<FlashcardDto>> GetFlashcard(Guid id, CancellationToken cancellationToken)
     {
-        var flashcard = await flashcardQueries.GetById(flashcardId, cancellationToken);
-        if (flashcard is null)
-        {
-            return NotFound();
-        }
-
-        return FlashcardDto.FromDomainModel(flashcard);
+        var flashcard = await flashcardQueries.GetById(new FlashcardId(id), cancellationToken);
+        return flashcard.Match<ActionResult<FlashcardDto>>(
+            f => FlashcardDto.FromDomainModel(f),
+            () => NotFound());
     }
 
     [HttpPost]
@@ -42,29 +41,22 @@ public class FlashcardController(ISender sender, IFlashcardQueries flashcardQuer
             Answer = request.Answer,
             Description = request.Description
         };
-
-        try
-        {
-            var flashcard = await sender.Send(input, cancellationToken);
-            var dto = FlashcardDto.FromDomainModel(flashcard);
-
-            return CreatedAtAction(nameof(GetFlashcard), new { flashcardId = dto.Id }, dto);
-        }
-        catch (ArgumentException exception)
-        {
-            return Conflict(exception.Message);
-        }
+        
+        var flashcard = await sender.Send(input, cancellationToken);
+        return flashcard.Match<ActionResult<FlashcardDto>>(
+            f => CreatedAtAction(nameof(GetFlashcard), new { id = f.Id.Value }, FlashcardDto.FromDomainModel(f)),
+            e => e.ToObjectResult());
     }
 
-    [HttpPut("{flashcardId:guid}")]
+    [HttpPut("{id:guid}")]
     public async Task<ActionResult<FlashcardDto>> UpdateFlashcard(
-        Guid flashcardId,
+        Guid id,
         [FromBody] UpdateFlashcardDto request,
         CancellationToken cancellationToken)
     {
         var input = new UpdateFlashcardCommand
         {
-            FlashcardId = flashcardId,
+            FlashcardId = id,
             Question = request.Question,
             Hint = request.Hint,
             Answer = request.Answer,
@@ -73,36 +65,24 @@ public class FlashcardController(ISender sender, IFlashcardQueries flashcardQuer
             DueDate = request.DueDate
         };
         
-        try
-        {
-            var flashcard = await sender.Send(input, cancellationToken);
-            if (flashcard is null)
-            {
-                return NotFound($"Flashcard with id {flashcardId} not found");
-            }
-            
-            var flashcardDto = FlashcardDto.FromDomainModel(flashcard);
-            return Ok(flashcardDto);
-        }
-        catch (ArgumentException exception)
-        {
-            return Conflict(exception.Message);
-        }
+        var flashcard = await sender.Send(input, cancellationToken);
+        
+        return flashcard.Match<ActionResult<FlashcardDto>>(
+            f => Ok(FlashcardDto.FromDomainModel(f)),
+            e => e.ToObjectResult());
     }
 
-    [HttpDelete("{flashcardId:guid}")]
-    public async Task<ActionResult> DeleteFlashcard(Guid flashcardId, CancellationToken cancellationToken)
+    [HttpDelete("{id:guid}")]
+    public async Task<ActionResult> DeleteFlashcard(Guid id, CancellationToken cancellationToken)
     {
         var input = new DeleteFlashcardCommand
         {
-            FlashcardId = flashcardId
+            FlashcardId = id
         };
         
-        var isDeleted = await sender.Send(input, cancellationToken);
-        if (isDeleted)
-        {
-            return NoContent();
-        }
-        return NotFound();
+        var flashcard = await sender.Send(input, cancellationToken);
+        return flashcard.Match<ActionResult>(
+            f => NoContent(),
+            e => e.ToObjectResult());
     }
 }

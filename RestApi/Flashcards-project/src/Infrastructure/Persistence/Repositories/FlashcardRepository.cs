@@ -1,6 +1,7 @@
 ﻿using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Domain.Flashcards;
+using LanguageExt;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
@@ -14,12 +15,12 @@ public class FlashcardRepository(ApplicationDbContext context) : IFlashcardRepos
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<Flashcard?> GetById(Guid id, CancellationToken cancellationToken)
+    public async Task<Option<Flashcard>> GetById(FlashcardId id, CancellationToken cancellationToken)
     {
         return await context.Flashcards.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
-    public async Task<Flashcard?> GetByQuestion(string question, CancellationToken cancellationToken)
+    public async Task<Option<Flashcard>> GetByQuestion(string question, CancellationToken cancellationToken)
     {
         return await context.Flashcards.FirstOrDefaultAsync(x => x.Question == question, cancellationToken);
     }
