@@ -17,7 +17,9 @@ public class ProblemRepository(ApplicationDbContext context) : IProblemRepositor
 
     public async Task<Option<Problem>> GetById(ProblemId id, CancellationToken cancellationToken)
     {
-        return await context.Problems.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return await context.Problems
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
     
     public async Task<Option<Problem>> GetByTitle(string title, CancellationToken cancellationToken)
