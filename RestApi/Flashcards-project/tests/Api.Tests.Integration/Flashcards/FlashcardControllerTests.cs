@@ -23,6 +23,7 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     
     private readonly string _getAllFlashcardsRoute;
     private readonly string _getOneFlashcardRoute;
+    private readonly string _getFilteredFlashcardsRoute;
     private readonly string _createFlashcardRoute;
     private readonly string _updateExistingFlashcardRoute;
     private readonly string _updateNonExistingFlashcardRoute;
@@ -41,10 +42,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
         _updateInvalidTestFlashcard = FlashcardsTestData.UpdateInvalidTestFlashcard();
 
         var nonExistentFlashcardId = FlashcardsTestData.NonExistentTestFlashcardId();
-        
 
         _getAllFlashcardsRoute = "flashcards";
         _getOneFlashcardRoute = $"flashcards/{_getFirstTestFlashcard.Id}";
+        _getFilteredFlashcardsRoute = $"flashcards/filter";
         _createFlashcardRoute = "flashcards";
         _updateExistingFlashcardRoute = $"flashcards/{_updateTakenTestFlashcard.Id}";
         _updateNonExistingFlashcardRoute = $"flashcards/{nonExistentFlashcardId}";
@@ -106,6 +107,217 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
         responseDto.Score.Should().Be(_getFirstTestFlashcard.Score);
     }
 
+    [Fact]
+    public async Task ShouldGetFlashcardsFilteredByQuestion()
+    {
+        // Arrange
+        var request = new SearchFlashcardDto(
+            Question: _getFirstTestFlashcard.Question,
+            Hint: null,
+            Answer: null,
+            Description: null,
+            Score: null,
+            DueDateFrom: null,
+            DueDateTo: null,
+            CreatedAtFrom: null,
+            CreatedAtTo: null);
+        
+        // Act
+        var response = await Client.PostAsJsonAsync(_getFilteredFlashcardsRoute, request);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<List<FlashcardDto>>();
+        responseDto.Should().NotBeNull();
+        
+        var dbFlashcardsCount = await Context.Flashcards.Where(x => x.Question == _getFirstTestFlashcard.Question).CountAsync();
+        responseDto.Count.Should().Be(dbFlashcardsCount);
+        responseDto.First().Id.Should().Be(_getFirstTestFlashcard.Id.Value);
+    }
+    
+    [Fact]
+    public async Task ShouldGetFlashcardsFilteredByHint()
+    {
+        // Arrange
+        var request = new SearchFlashcardDto(
+            Question: null,
+            Hint: _getFirstTestFlashcard.Hint,
+            Answer: null,
+            Description: null,
+            Score: null,
+            DueDateFrom: null,
+            DueDateTo: null,
+            CreatedAtFrom: null,
+            CreatedAtTo: null);
+        
+        // Act
+        var response = await Client.PostAsJsonAsync(_getFilteredFlashcardsRoute, request);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<List<FlashcardDto>>();
+        responseDto.Should().NotBeNull();
+        
+        var dbFlashcardsCount = await Context.Flashcards.Where(x => x.Hint == _getFirstTestFlashcard.Hint).CountAsync();
+        responseDto.Count.Should().Be(dbFlashcardsCount);
+        responseDto.First().Id.Should().Be(_getFirstTestFlashcard.Id.Value);
+    }
+    
+    [Fact]
+    public async Task ShouldGetFlashcardsFilteredByAnswer()
+    {
+        // Arrange
+        var request = new SearchFlashcardDto(
+            Question: null,
+            Hint: null,
+            Answer: _getSecondTestFlashcard.Answer,
+            Description: null,
+            Score: null,
+            DueDateFrom: null,
+            DueDateTo: null,
+            CreatedAtFrom: null,
+            CreatedAtTo: null);
+        
+        // Act
+        var response = await Client.PostAsJsonAsync(_getFilteredFlashcardsRoute, request);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<List<FlashcardDto>>();
+        responseDto.Should().NotBeNull();
+        
+        var dbFlashcardsCount = await Context.Flashcards.Where(x => x.Answer == _getSecondTestFlashcard.Answer).CountAsync();
+        responseDto.Count.Should().Be(dbFlashcardsCount);
+        responseDto.First().Id.Should().Be(_getSecondTestFlashcard.Id.Value);
+    }
+    
+    [Fact]
+    public async Task ShouldGetFlashcardsFilteredByDescription()
+    {
+        // Arrange
+        var request = new SearchFlashcardDto(
+            Question: null,
+            Hint: null,
+            Answer: null,
+            Description: _getSecondTestFlashcard.Description,
+            Score: null,
+            DueDateFrom: null,
+            DueDateTo: null,
+            CreatedAtFrom: null,
+            CreatedAtTo: null);
+        
+        // Act
+        var response = await Client.PostAsJsonAsync(_getFilteredFlashcardsRoute, request);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<List<FlashcardDto>>();
+        responseDto.Should().NotBeNull();
+        
+        var dbFlashcardsCount = await Context.Flashcards.Where(x => x.Description == _getSecondTestFlashcard.Description).CountAsync();
+        responseDto.Count.Should().Be(dbFlashcardsCount);
+        responseDto.First().Id.Should().Be(_getSecondTestFlashcard.Id.Value);
+    }
+    
+    [Fact]
+    public async Task ShouldGetFlashcardsFilteredByScore()
+    {
+        // Arrange
+        var request = new SearchFlashcardDto(
+            Question: null,
+            Hint: null,
+            Answer: null,
+            Description: null,
+            Score: 95,
+            DueDateFrom: null,
+            DueDateTo: null,
+            CreatedAtFrom: null,
+            CreatedAtTo: null);
+        
+        // Act
+        var response = await Client.PostAsJsonAsync(_getFilteredFlashcardsRoute, request);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<List<FlashcardDto>>();
+        responseDto.Should().NotBeNull();
+
+        var dbFlashcardsCount = await Context.Flashcards.Where(x => x.Score == 95).CountAsync();
+        responseDto.Count.Should().Be(dbFlashcardsCount);
+        responseDto.First().Id.Should().Be(_getFirstTestFlashcard.Id.Value);
+    }
+    
+    [Fact]
+    public async Task ShouldGetFlashcardsFilteredByDueDate()
+    {
+        // Arrange
+        var request = new SearchFlashcardDto(
+            Question: null,
+            Hint: null,
+            Answer: null,
+            Description: null,
+            Score: null,
+            DueDateFrom: _getFirstTestFlashcard.DueDate.AddHours(-1),
+            DueDateTo: _getSecondTestFlashcard.DueDate,
+            CreatedAtFrom: null,
+            CreatedAtTo: null);
+        
+        // Act
+        var response = await Client.PostAsJsonAsync(_getFilteredFlashcardsRoute, request);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<List<FlashcardDto>>();
+        responseDto.Should().NotBeNull();
+        
+        var dbFlashcardsCount = await Context.Flashcards
+            .Where(x => x.DueDate >= request.DueDateFrom
+                        && x.DueDate <= request.DueDateTo)
+            .CountAsync();
+        responseDto.Count.Should().Be(dbFlashcardsCount);
+        responseDto.Should().Contain(x => x.Id == _getFirstTestFlashcard.Id.Value);
+        responseDto.Should().Contain(x => x.Id == _getSecondTestFlashcard.Id.Value);
+    }
+    
+    [Fact]
+    public async Task ShouldGetFlashcardsFilteredByCreatedAt()
+    {
+        // Arrange
+        var request = new SearchFlashcardDto(
+            Question: null,
+            Hint: null,
+            Answer: null,
+            Description: null,
+            Score: null,
+            DueDateFrom: null,
+            DueDateTo: null,
+            CreatedAtFrom: DateTime.UtcNow.AddMinutes(-10),
+            CreatedAtTo: DateTime.UtcNow.AddMinutes(10));
+        
+        // Act
+        var response = await Client.PostAsJsonAsync(_getFilteredFlashcardsRoute, request);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<List<FlashcardDto>>();
+        responseDto.Should().NotBeNull();
+        
+        var dbFlashcardsCount = await Context.Flashcards
+            .Where(x => x.CreatedAt >= request.CreatedAtFrom
+                        && x.CreatedAt <= request.CreatedAtTo)
+            .CountAsync();
+        responseDto.Count.Should().Be(dbFlashcardsCount);
+        responseDto.Should().Contain(x => x.Id == _getFirstTestFlashcard.Id.Value);
+        responseDto.Should().Contain(x => x.Id == _getSecondTestFlashcard.Id.Value);
+    }
+    
     [Fact]
     public async Task ShouldCreateFlashcard()
     {
