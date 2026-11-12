@@ -29,6 +29,26 @@ public class FlashcardController(ISender sender, IFlashcardQueries flashcardQuer
             () => NotFound());
     }
 
+    [HttpPost("filter")]
+    public async Task<ActionResult<IReadOnlyList<FlashcardDto>>> FilterFlashcards(
+        [FromBody] SearchFlashcardDto request,
+        CancellationToken cancellationToken)
+    {
+        var flashcards = await flashcardQueries.GetFiltered(
+            question: request.Question,
+            hint: request.Hint,
+            answer: request.Answer,
+            description: request.Description,
+            score: request.Score,
+            dueDateFrom: request.DueDateFrom,
+            dueDateTo: request.DueDateTo,
+            createdAtFrom: request.CreatedAtFrom,
+            createdAtTo: request.CreatedAtTo,
+            cancellationToken);
+
+        return flashcards.Select(FlashcardDto.FromDomainModel).ToList();
+    }
+
     [HttpPost]
     public async Task<ActionResult<FlashcardDto>> CreateFlashcard(
         [FromBody] CreateFlashcardDto request,

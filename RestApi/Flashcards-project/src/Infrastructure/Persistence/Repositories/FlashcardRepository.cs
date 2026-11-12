@@ -20,6 +20,68 @@ public class FlashcardRepository(ApplicationDbContext context) : IFlashcardRepos
         return await context.Flashcards.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Flashcard>> GetFiltered(
+        string? question,
+        string? hint,
+        string? answer,
+        string? description,
+        int? score,
+        DateTime? dueDateFrom,
+        DateTime? dueDateTo,
+        DateTime? createdAtFrom,
+        DateTime? createdAtTo,
+        CancellationToken cancellationToken)
+    {
+        var query = context.Flashcards.AsQueryable();
+
+        if (!String.IsNullOrEmpty(question))
+        {
+            query = query.Where(x => x.Question.Contains(question));
+        }
+
+        if (!String.IsNullOrEmpty(hint))
+        {
+            query = query.Where(x => x.Hint != null && x.Hint.Contains(hint));
+        }
+
+        if (!String.IsNullOrEmpty(answer))
+        {
+            query = query.Where(x => x.Answer.Contains(answer));
+        }
+
+        if (!String.IsNullOrEmpty(description))
+        {
+            query = query.Where(x => x.Description != null && x.Description.Contains(description));
+        }
+
+        if (score.HasValue)
+        {
+            query = query.Where(x => x.Score == score);
+        }
+
+        if (dueDateFrom.HasValue)
+        {
+            query = query.Where(x => x.DueDate >= dueDateFrom);
+        }
+        
+        if (dueDateTo.HasValue)
+        {
+            query = query.Where(x => x.DueDate <= dueDateTo);
+        }
+
+        if (createdAtFrom.HasValue)
+        {
+            query = query.Where(x => x.CreatedAt >= createdAtFrom);
+        }
+
+        if (createdAtTo.HasValue)
+        {
+            query = query.Where(x => x.CreatedAt <= createdAtTo);
+        }
+        
+        return await query.ToListAsync(cancellationToken);
+    }
+
     public async Task<Option<Flashcard>> GetByQuestion(string question, CancellationToken cancellationToken)
     {
         return await context.Flashcards.FirstOrDefaultAsync(x => x.Question == question, cancellationToken);

@@ -44,3 +44,15 @@ public record UpdateFlashcardDto(
     int Score,
     DateTime DueDate
 );
+
+public record SearchFlashcardDto(
+    string? Question,
+    string? Hint,
+    string? Answer,
+    string? Description,
+    int? Score,
+    DateTime? DueDateFrom,
+    DateTime? DueDateTo,
+    DateTime? CreatedAtFrom,
+    DateTime? CreatedAtTo
+);
