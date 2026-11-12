@@ -4,6 +4,24 @@ namespace Tests.Data.Flashcards;
 
 public static class FlashcardsTestData
 {
+    public static Flashcard GetFirstTestFlashcard() =>  Flashcard.New(
+        id: FlashcardId.New(),
+        question: "First gettable flashcard",
+        hint: "the hint",
+        answer: "First gettable flashcard answer",
+        description: null,
+        score: 95,
+        dueDate: new DateTime(2026, 8, 3, 15, 30, 35));
+    
+    public static Flashcard GetSecondTestFlashcard() =>  Flashcard.New(
+        id: FlashcardId.New(),
+        question: "Second gettable flashcard (now with unique words)",
+        hint: null,
+        answer: "Second gettable flashcard answer",
+        description: "description text might contain anything, have you ever thought of that?",
+        score: 79,
+        dueDate: new DateTime(2026, 11, 11, 15, 00, 35));
+    
     public static Flashcard CreateValidTestFlashcard() => Flashcard.New(
         id: FlashcardId.New(),
         question: "First test flashcard",

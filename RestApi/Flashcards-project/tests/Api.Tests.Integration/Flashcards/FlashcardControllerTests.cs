@@ -12,6 +12,8 @@ namespace Api.Tests.Integration.Flashcards;
 
 public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
 {
+    private readonly Flashcard _getFirstTestFlashcard;
+    private readonly Flashcard _getSecondTestFlashcard;
     private readonly Flashcard _createValidTestFlashcard;
     private readonly Flashcard _createTakenTestFlashcard;
     private readonly Flashcard _createInvalidTestFlashcard;
@@ -19,6 +21,8 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     private readonly Flashcard _updateTakenTestFlashcard;
     private readonly Flashcard _updateInvalidTestFlashcard;
     
+    private readonly string _getAllFlashcardsRoute;
+    private readonly string _getOneFlashcardRoute;
     private readonly string _createFlashcardRoute;
     private readonly string _updateExistingFlashcardRoute;
     private readonly string _updateNonExistingFlashcardRoute;
@@ -27,6 +31,8 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
 
     public FlashcardControllerTests(IntegrationTestWebFactory factory) : base(factory)
     {
+        _getFirstTestFlashcard = FlashcardsTestData.GetFirstTestFlashcard();
+        _getSecondTestFlashcard = FlashcardsTestData.GetSecondTestFlashcard();
         _createValidTestFlashcard = FlashcardsTestData.CreateValidTestFlashcard();
         _createTakenTestFlashcard = FlashcardsTestData.CreateTakenTestFlashcard();
         _createInvalidTestFlashcard = FlashcardsTestData.CreateInvalidTestFlashcard();
@@ -36,6 +42,9 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
 
         var nonExistentFlashcardId = FlashcardsTestData.NonExistentTestFlashcardId();
         
+
+        _getAllFlashcardsRoute = "flashcards";
+        _getOneFlashcardRoute = $"flashcards/{_getFirstTestFlashcard.Id}";
         _createFlashcardRoute = "flashcards";
         _updateExistingFlashcardRoute = $"flashcards/{_updateTakenTestFlashcard.Id}";
         _updateNonExistingFlashcardRoute = $"flashcards/{nonExistentFlashcardId}";
@@ -45,6 +54,8 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     
     public async Task InitializeAsync()
     {
+        await Context.Flashcards.AddAsync(_getFirstTestFlashcard);
+        await Context.Flashcards.AddAsync(_getSecondTestFlashcard);
         await Context.Flashcards.AddAsync(_createTakenTestFlashcard);
         await Context.Flashcards.AddAsync(_updateTakenTestFlashcard);
 
@@ -61,8 +72,44 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     }
 
     [Fact]
+    public async Task ShouldGetAllFlashcards()
+    {
+        // Act
+        var response = await Client.GetAsync(_getAllFlashcardsRoute);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<List<FlashcardDto>>();
+        responseDto.Should().NotBeNull();
+        
+        var dbFlashcardsCount = await Context.Flashcards.CountAsync();
+        dbFlashcardsCount.Should().Be(responseDto.Count);
+    }
+    
+    [Fact]
+    public async Task ShouldGetOneFlashcard()
+    {
+        // Act
+        var response = await Client.GetAsync(_getOneFlashcardRoute);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<FlashcardDto>();
+        responseDto.Should().NotBeNull();
+
+        responseDto.Question.Should().Be(_getFirstTestFlashcard.Question);
+        responseDto.Hint.Should().Be(_getFirstTestFlashcard.Hint);
+        responseDto.Answer.Should().Be(_getFirstTestFlashcard.Answer);
+        responseDto.Description.Should().Be(_getFirstTestFlashcard.Description);
+        responseDto.Score.Should().Be(_getFirstTestFlashcard.Score);
+    }
+
+    [Fact]
     public async Task ShouldCreateFlashcard()
     {
+        // Arrange
         var request = new CreateFlashcardDto(
             _createValidTestFlashcard.Question,
             _createValidTestFlashcard.Hint,
@@ -70,8 +117,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
             _createValidTestFlashcard.Description
         );
         
+        // Act
         var response = await Client.PostAsJsonAsync(_createFlashcardRoute, request);
 
+        // Assert
         response.IsSuccessStatusCode.Should().BeTrue();
         
         var responseDto = await response.Content.ReadFromJsonAsync<FlashcardDto>();
@@ -89,8 +138,9 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     }
 
     [Fact]
-    public async Task ShouldNotCreateFlashcardBecauseTitleIsAlreadyTaken()
+    public async Task ShouldNotCreateFlashcardBecauseQuestionIsAlreadyTaken()
     {
+        // Arrange
         var request = new CreateFlashcardDto(
             _createTakenTestFlashcard.Question,
             _createTakenTestFlashcard.Hint,
@@ -98,8 +148,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
             _createTakenTestFlashcard.Description
         );
         
+        // Act
         var response = await Client.PostAsJsonAsync(_createFlashcardRoute, request);
 
+        // Assert
         response.IsSuccessStatusCode.Should().BeFalse();
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
@@ -110,6 +162,7 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     [Fact]
     public async Task ShouldNotCreateFlashcardBecauseRequestIsInvalid()
     {
+        // Arrange
         var flashcardsInDb = await Context.Flashcards.CountAsync();
         var request = new CreateFlashcardDto(
             _createInvalidTestFlashcard.Question,
@@ -117,8 +170,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
             _createInvalidTestFlashcard.Answer,
             _createInvalidTestFlashcard.Description);
         
+        // Act
         var response = await Client.PostAsJsonAsync(_createFlashcardRoute, request);
         
+        // Assert
         response.IsSuccessStatusCode.Should().BeFalse();
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
@@ -129,6 +184,7 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     [Fact]
     public async Task ShouldUpdateFlashcard()
     {
+        // Arrange
         var request = new UpdateFlashcardDto(
             _updateValidTestFlashcard.Question,
             _updateValidTestFlashcard.Hint,
@@ -137,8 +193,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
             _updateValidTestFlashcard.Score,
             _updateValidTestFlashcard.DueDate);
         
+        // Act
         var response = await Client.PutAsJsonAsync(_updateExistingFlashcardRoute, request);
         
+        // Assert
         response.IsSuccessStatusCode.Should().BeTrue();
         
         var responseDto = await response.Content.ReadFromJsonAsync<FlashcardDto>();
@@ -155,8 +213,9 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     }
 
     [Fact]
-    public async Task ShouldNotUpdateFlashcardBecauseTitleAlreadyTaken()
+    public async Task ShouldNotUpdateFlashcardBecauseQuestionAlreadyTaken()
     {
+        // Arrange
         var request = new UpdateFlashcardDto(
             _createTakenTestFlashcard.Question,
             _updateValidTestFlashcard.Hint,
@@ -165,8 +224,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
             _updateValidTestFlashcard.Score,
             _updateValidTestFlashcard.DueDate);
         
+        // Act
         var response = await Client.PutAsJsonAsync(_updateExistingFlashcardRoute, request);
         
+        // Assert
         response.IsSuccessStatusCode.Should().BeFalse();
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
@@ -182,6 +243,7 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     [Fact]
     public async Task ShouldNotUpdateFlashcardBecauseRequestIsInvalid()
     {
+        // Arrange
         var request = new UpdateFlashcardDto(
             _updateInvalidTestFlashcard.Question,
             _updateInvalidTestFlashcard.Hint,
@@ -190,8 +252,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
             _updateInvalidTestFlashcard.Score,
             _updateInvalidTestFlashcard.DueDate);
         
+        // Act
         var response = await Client.PutAsJsonAsync(_updateExistingFlashcardRoute, request);
         
+        // Assert
         response.IsSuccessStatusCode.Should().BeFalse();
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         
@@ -206,6 +270,7 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     [Fact]
     public async Task ShouldNotUpdateFlashcardBecauseFlashcardNotFound()
     {
+        // Arrange
         var request = new UpdateFlashcardDto(
             _updateValidTestFlashcard.Question,
             _updateValidTestFlashcard.Hint,
@@ -214,8 +279,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
             _updateValidTestFlashcard.Score,
             _updateValidTestFlashcard.DueDate);
         
+        // Act
         var response = await Client.PutAsJsonAsync(_updateNonExistingFlashcardRoute, request);
         
+        // Assert
         response.IsSuccessStatusCode.Should().BeFalse();
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -223,8 +290,10 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     [Fact]
     public async Task ShouldDeleteFlashcard()
     {
+        // Act
         var response = await Client.DeleteAsync(_deleteExistingFlashcardRoute);
         
+        // Assert
         response.IsSuccessStatusCode.Should().BeTrue();
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -235,9 +304,13 @@ public class FlashcardControllerTests : BaseIntegrationTest, IAsyncLifetime
     [Fact]
     public async Task ShouldNotDeleteFlashcardBecauseFlashcardNotFound()
     {
+        // Arrange
         var dbFlashcardsCount = await Context.Flashcards.CountAsync();
+        
+        // Act
         var response = await Client.DeleteAsync(_deleteNonExistingFlashcardRoute);
         
+        // Assert
         response.IsSuccessStatusCode.Should().BeFalse();
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         
