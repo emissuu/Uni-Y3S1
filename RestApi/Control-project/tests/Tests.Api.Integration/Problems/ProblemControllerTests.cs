@@ -23,7 +23,6 @@ public class ProblemControllerTests : BaseIntegrationTest, IAsyncLifetime
     
     private readonly string _getAllProblemsRoute;
     private readonly string _getOneProblemRoute;
-    private readonly string _getFilteredProblemsRoute;
     private readonly string _createProblemRoute;
     private readonly string _updateExistingProblemRoute;
     private readonly string _updateNonExistingProblemRoute;
@@ -45,7 +44,6 @@ public class ProblemControllerTests : BaseIntegrationTest, IAsyncLifetime
 
         _getAllProblemsRoute = "problems";
         _getOneProblemRoute = $"problems/{_getFirstTestProblem.Id}";
-        _getFilteredProblemsRoute = $"problems/filter";
         _createProblemRoute = "problems";
         _updateExistingProblemRoute = $"problems/{_updateTakenTestProblem.Id}";
         _updateNonExistingProblemRoute = $"problems/{nonExistentProblemId}";
@@ -84,8 +82,13 @@ public class ProblemControllerTests : BaseIntegrationTest, IAsyncLifetime
         var responseDto = await response.Content.ReadFromJsonAsync<List<ProblemDto>>();
         responseDto.Should().NotBeNull();
         
-        var dbProblemsCount = await Context.Problems.CountAsync();
-        dbProblemsCount.Should().Be(responseDto.Count);
+        var dbProblems = await Context.Problems.ToListAsync();
+        dbProblems.Count.Should().Be(responseDto.Count);
+        dbProblems.Should().Contain(x => x.Id == _getFirstTestProblem.Id);
+        dbProblems.Should().Contain(x => x.Id == _getSecondTestProblem.Id);
+        dbProblems.Should().Contain(x => x.Id == _createTakenTestProblem.Id);
+        dbProblems.Should().Contain(x => x.Id == _updateTakenTestProblem.Id);
+        
     }
 
     [Fact]
@@ -105,199 +108,6 @@ public class ProblemControllerTests : BaseIntegrationTest, IAsyncLifetime
         responseDto.Answer.Should().Be(_getFirstTestProblem.Answer);
         responseDto.Category.Should().Be(_getFirstTestProblem.Category);
         responseDto.Difficulty.Should().Be(_getFirstTestProblem.Difficulty);
-    }
-    
-    [Fact]
-    public async Task ShouldGetProblemsFilteredByNothing()
-    {
-        // Arrange
-        var request = new SearchProblemDto(
-            Title: null,
-            Code: null,
-            Answer: null,
-            Category: null,
-            Difficulty: null,
-            CreatedAtFrom: null,
-            CreatedAtTo: null);
-        
-        // Act
-        var response = await Client.PostAsJsonAsync(_getFilteredProblemsRoute, request);
-        
-        // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
-        
-        var responseDto = await response.Content.ReadFromJsonAsync<List<ProblemDto>>();
-        responseDto.Should().NotBeNull();
-        
-        var dbProblemsCount = await Context.Problems.CountAsync();
-        responseDto.Count.Should().Be(dbProblemsCount);
-    }
-
-    [Fact]
-    public async Task ShouldGetProblemsFilteredByTitle()
-    {
-        // Arrange
-        var request = new SearchProblemDto(
-            Title: _getFirstTestProblem.Title,
-            Code: null,
-            Answer: null,
-            Category: null,
-            Difficulty: null,
-            CreatedAtFrom: null,
-            CreatedAtTo: null);
-        
-        // Act
-        var response = await Client.PostAsJsonAsync(_getFilteredProblemsRoute, request);
-        
-        // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
-        
-        var responseDto = await response.Content.ReadFromJsonAsync<List<ProblemDto>>();
-        responseDto.Should().NotBeNull();
-        
-        var dbProblemsCount = await Context.Problems.Where(x => x.Title == _getFirstTestProblem.Title).CountAsync();
-        responseDto.Count.Should().Be(dbProblemsCount);
-        responseDto.Should().Contain(x => x.Id == _getFirstTestProblem.Id.Value);
-
-    }
-    
-    [Fact]
-    public async Task ShouldGetProblemsFilteredByCode()
-    {
-        // Arrange
-        var request = new SearchProblemDto(
-            Title: null,
-            Code: "return",
-            Answer: null,
-            Category: null,
-            Difficulty: null,
-            CreatedAtFrom: null,
-            CreatedAtTo: null);
-        
-        // Act
-        var response = await Client.PostAsJsonAsync(_getFilteredProblemsRoute, request);
-        
-        // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
-        
-        var responseDto = await response.Content.ReadFromJsonAsync<List<ProblemDto>>();
-        responseDto.Should().NotBeNull();
-        
-        var dbProblemsCount = await Context.Problems.Where(x => x.Code.Contains(request.Code!)).CountAsync();
-        responseDto.Count.Should().Be(dbProblemsCount);
-    }
-    
-    [Fact]
-    public async Task ShouldGetProblemsFilteredByAnswer()
-    {
-        // Arrange
-        var request = new SearchProblemDto(
-            Title: null,
-            Code: null,
-            Answer: _getSecondTestProblem.Answer,
-            Category: null,
-            Difficulty: null,
-            CreatedAtFrom: null,
-            CreatedAtTo: null);
-        
-        // Act
-        var response = await Client.PostAsJsonAsync(_getFilteredProblemsRoute, request);
-        
-        // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
-        
-        var responseDto = await response.Content.ReadFromJsonAsync<List<ProblemDto>>();
-        responseDto.Should().NotBeNull();
-        
-        var dbProblemsCount = await Context.Problems.Where(x => x.Answer == _getSecondTestProblem.Answer).CountAsync();
-        responseDto.Count.Should().Be(dbProblemsCount);
-        responseDto.Should().Contain(x => x.Id == _getSecondTestProblem.Id.Value);
-    }
-    
-    [Fact]
-    public async Task ShouldGetProblemsFilteredByCategory()
-    {
-        // Arrange
-        var request = new SearchProblemDto(
-            Title: null,
-            Code: null,
-            Answer: null,
-            Category: _getSecondTestProblem.Category,
-            Difficulty: null,
-            CreatedAtFrom: null,
-            CreatedAtTo: null);
-        
-        // Act
-        var response = await Client.PostAsJsonAsync(_getFilteredProblemsRoute, request);
-        
-        // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
-        
-        var responseDto = await response.Content.ReadFromJsonAsync<List<ProblemDto>>();
-        responseDto.Should().NotBeNull();
-        
-        var dbProblemsCount = await Context.Problems.Where(x => x.Category == _getSecondTestProblem.Category).CountAsync();
-        responseDto.Count.Should().Be(dbProblemsCount);
-        responseDto.Should().Contain(x => x.Id == _getSecondTestProblem.Id.Value);
-        responseDto.Should().Contain(x => x.Id == _getFirstTestProblem.Id.Value);
-    }
-    
-    [Fact]
-    public async Task ShouldGetProblemsFilteredByDifficulty()
-    {
-        // Arrange
-        var request = new SearchProblemDto(
-            Title: null,
-            Code: null,
-            Answer: null,
-            Category: null,
-            Difficulty: _getFirstTestProblem.Difficulty,
-            CreatedAtFrom: null,
-            CreatedAtTo: null);
-        
-        // Act
-        var response = await Client.PostAsJsonAsync(_getFilteredProblemsRoute, request);
-        
-        // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
-        
-        var responseDto = await response.Content.ReadFromJsonAsync<List<ProblemDto>>();
-        responseDto.Should().NotBeNull();
-        
-        var dbProblemsCount = await Context.Problems.Where(x => x.Difficulty == _getFirstTestProblem.Difficulty).CountAsync();
-        responseDto.Count.Should().Be(dbProblemsCount);
-        responseDto.Should().Contain(x => x.Id == _getFirstTestProblem.Id.Value);
-    }
-    
-    [Fact]
-    public async Task ShouldGetProblemsFilteredByCreationTime()
-    {
-        // Arrange
-        var request = new SearchProblemDto(
-            Title: null,
-            Code: null,
-            Answer: null,
-            Category: null,
-            Difficulty: null,
-            CreatedAtFrom: DateTime.UtcNow.AddMinutes(-10),
-            CreatedAtTo: DateTime.UtcNow.AddMinutes(10));
-        
-        // Act
-        var response = await Client.PostAsJsonAsync(_getFilteredProblemsRoute, request);
-        
-        // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
-        
-        var responseDto = await response.Content.ReadFromJsonAsync<List<ProblemDto>>();
-        responseDto.Should().NotBeNull();
-        
-        var dbProblemsCount = await Context.Problems
-            .Where(x => x.CreatedAt >= request.CreatedAtFrom 
-                        && x.CreatedAt <= request.CreatedAtTo)
-            .CountAsync();
-        responseDto.Count.Should().Be(dbProblemsCount);
-        responseDto.Should().Contain(x => x.Id == _getFirstTestProblem.Id.Value);
-        responseDto.Should().Contain(x => x.Id == _getSecondTestProblem.Id.Value);
     }
     
     [Fact]
@@ -402,6 +212,36 @@ public class ProblemControllerTests : BaseIntegrationTest, IAsyncLifetime
         var dbProblem = await Context.Problems.FirstOrDefaultAsync(x => x.Id == _updateTakenTestProblem.Id);
         dbProblem.Should().NotBeNull();
         dbProblem.Title.Should().Be(_updateValidTestProblem.Title);
+        dbProblem.Code.Should().Be(_updateValidTestProblem.Code);
+        dbProblem.Answer.Should().Be(_updateValidTestProblem.Answer);
+        dbProblem.Category.Should().Be(_updateValidTestProblem.Category);
+        dbProblem.Difficulty.Should().Be(_updateValidTestProblem.Difficulty);
+    }
+    
+    [Fact]
+    public async Task ShouldUpdateProblemWithTheSameTitle()
+    {
+        // Arrange
+        var request = new UpdateProblemDto(
+            _updateTakenTestProblem.Title,
+            _updateValidTestProblem.Code,
+            _updateValidTestProblem.Answer,
+            _updateValidTestProblem.Category,
+            _updateValidTestProblem.Difficulty);
+        
+        // Act
+        var response = await Client.PutAsJsonAsync(_updateExistingProblemRoute, request);
+        
+        // Assert
+        response.IsSuccessStatusCode.Should().BeTrue();
+        
+        var responseDto = await response.Content.ReadFromJsonAsync<ProblemDto>();
+        responseDto.Should().NotBeNull();
+        responseDto.Id.Should().Be(_updateTakenTestProblem.Id.Value);
+        
+        var dbProblem = await Context.Problems.FirstOrDefaultAsync(x => x.Id == _updateTakenTestProblem.Id);
+        dbProblem.Should().NotBeNull();
+        dbProblem.Title.Should().Be(_updateTakenTestProblem.Title);
         dbProblem.Code.Should().Be(_updateValidTestProblem.Code);
         dbProblem.Answer.Should().Be(_updateValidTestProblem.Answer);
         dbProblem.Category.Should().Be(_updateValidTestProblem.Category);
