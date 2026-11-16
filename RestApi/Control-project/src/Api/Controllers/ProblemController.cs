@@ -29,6 +29,24 @@ public class ProblemController(ISender sender, IProblemQueries problemQueries) :
             () => NotFound());
     }
 
+    [HttpPost("filter")]
+    public async Task<ActionResult<IReadOnlyList<ProblemDto>>> GetFiltered(
+        [FromBody] SearchProblemDto request,
+        CancellationToken cancellationToken)
+    {
+        var filteredProblems = await problemQueries.GetFiltered(
+            title: request.Title,
+            code: request.Code,
+            answer: request.Answer,
+            category: request.Category,
+            difficulty: request.Difficulty,
+            createdAtFrom: request.CreatedAtFrom,
+            createdAtTo: request.CreatedAtTo,
+            cancellationToken);
+
+        return filteredProblems.Select(ProblemDto.FromDomainModel).ToList();
+    }
+
     [HttpPost]
     public async Task<ActionResult<ProblemDto>> CreateProblem(
         [FromBody] CreateProblemDto request,

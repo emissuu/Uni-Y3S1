@@ -29,13 +29,22 @@ public record ProblemDto(
 public record CreateProblemDto(
     string Title,
     string Code,
+    string Answer,
     Category Category,
-    Difficulty Difficulty,
-    string Answer);
+    Difficulty Difficulty);
     
 public record UpdateProblemDto(
     string Title,
     string Code,
+    string Answer,
     Category Category,
-    Difficulty Difficulty,
-    string Answer);
+    Difficulty Difficulty);
+    
+public record SearchProblemDto(
+    string? Title,
+    string? Code,
+    string? Answer,
+    Category? Category,
+    Difficulty? Difficulty,
+    DateTime? CreatedAtFrom,
+    DateTime? CreatedAtTo);

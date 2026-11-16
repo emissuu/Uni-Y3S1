@@ -26,6 +26,7 @@ public class UpdateProblemCommandHandler(IProblemRepository problemRepository)
     {
         var problemId = new ProblemId(request.ProblemId);
         var problem = await problemRepository.GetById(problemId, cancellationToken);
+        
         return await problem.MatchAsync(
             p => CheckDuplicates(p.Id, request.Title, cancellationToken)
                 .BindAsync(_ => UpdateEntity(p, request, cancellationToken)),

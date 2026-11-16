@@ -21,6 +21,50 @@ public class ProblemRepository(ApplicationDbContext context) : IProblemRepositor
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Problem>> GetFiltered(
+        string? title,
+        string? code,
+        string? answer,
+        Category? category,
+        Difficulty? difficulty,
+        DateTime? createdAtFrom,
+        DateTime? createdAtTo,
+        CancellationToken cancellationToken)
+    {
+        var query = context.Problems.AsQueryable();
+        
+        if (!String.IsNullOrEmpty(title))
+        {
+            query = query.Where(x => x.Title.Contains(title));
+        }
+        if (!String.IsNullOrEmpty(code))
+        {
+            query = query.Where(x => x.Code.Contains(code));
+        }
+        if (!String.IsNullOrEmpty(answer))
+        {
+            query = query.Where(x => x.Answer.Contains(answer));
+        }
+        if (category != null)
+        {
+            query = query.Where(x => x.Category == category);
+        }
+        if (difficulty != null)
+        {
+            query = query.Where(x => x.Difficulty == difficulty);
+        }
+        if (createdAtFrom.HasValue)
+        {
+            query = query.Where(x => x.CreatedAt >= createdAtFrom);
+        }
+        if (createdAtTo.HasValue)
+        {
+            query = query.Where(x => x.CreatedAt <= createdAtTo);
+        }
+        
+        return await query.AsNoTracking().ToListAsync(cancellationToken);
+    }
     
     public async Task<Option<Problem>> GetByTitle(string title, CancellationToken cancellationToken)
     {
@@ -36,7 +80,7 @@ public class ProblemRepository(ApplicationDbContext context) : IProblemRepositor
 
     public async Task<Problem> Update(Problem problem, CancellationToken cancellationToken)
     {
-        context.Entry(problem).CurrentValues.SetValues(problem);
+        context.Problems.Update(problem);
         await context.SaveChangesAsync(cancellationToken);
         return problem;
     }
