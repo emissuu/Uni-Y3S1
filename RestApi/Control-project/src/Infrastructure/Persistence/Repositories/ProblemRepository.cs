@@ -36,15 +36,15 @@ public class ProblemRepository(ApplicationDbContext context) : IProblemRepositor
         
         if (!String.IsNullOrEmpty(title))
         {
-            query = query.Where(x => x.Title.Contains(title));
+            query = query.Where(x => x.Title.ToLower().Contains(title.ToLower()));
         }
         if (!String.IsNullOrEmpty(code))
         {
-            query = query.Where(x => x.Code.Contains(code));
+            query = query.Where(x => x.Code.ToLower().Contains(code.ToLower()));
         }
         if (!String.IsNullOrEmpty(answer))
         {
-            query = query.Where(x => x.Answer.Contains(answer));
+            query = query.Where(x => x.Answer.ToLower().Contains(answer.ToLower()));
         }
         if (category != null)
         {
@@ -68,7 +68,9 @@ public class ProblemRepository(ApplicationDbContext context) : IProblemRepositor
     
     public async Task<Option<Problem>> GetByTitle(string title, CancellationToken cancellationToken)
     {
-        return await context.Problems.FirstOrDefaultAsync(x => x.Title == title, cancellationToken);
+        return await context.Problems
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Title == title, cancellationToken);
     }
 
     public async Task<Problem> Add(Problem problem, CancellationToken cancellationToken)
